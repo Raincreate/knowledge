@@ -1,0 +1,16 @@
+# PyTorch (CUDA 12.8)
+#--extra-index-url https://download.pytorch.org/whl/cu128
+#torch
+#torchvision
+
+# 核心依赖
+minio
+langchain-openai
+langgraph
+grandalf
+pymilvus[model]
+sentence-transformers
+pymongo
+# 项目使用 --backend pipeline；不要安装包含 LMDeploy/vLLM 的 all 扩展。
+mineru[pipeline]==3.4.5
+openai-agents

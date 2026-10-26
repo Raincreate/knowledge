@@ -1,0 +1,118 @@
+name: shopkeeper-brain-02
+
+x-milvus-image: &milvus-image milvusdb/milvus:v2.6.25
+
+services:
+  # Milvus uses etcd for metadata.
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.25
+    container_name: shopkeeper-brain-02-etcd
+    command:
+      - etcd
+      - --advertise-client-urls=http://etcd:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --data-dir=/etcd
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    volumes:
+      - etcd-data:/etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # This single MinIO instance is shared by Milvus and the application.
+  minio:
+    image: milvusdb/minio:RELEASE.2024-12-18T13-15-44Z
+    container_name: shopkeeper-brain-02-minio
+    command: minio server /minio_data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+      # Kept for compatibility with the MinIO build used by Milvus.
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "127.0.0.1:${MINIO_API_PORT:-9000}:9000"
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio-data:/minio_data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  milvus:
+    image: *milvus-image
+    container_name: shopkeeper-brain-02-milvus
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MINIO_REGION: us-east-1
+    ports:
+      - "127.0.0.1:${MILVUS_PORT:-19530}:19530"
+      - "127.0.0.1:${MILVUS_HEALTH_PORT:-9091}:9091"
+    volumes:
+      - milvus-data:/var/lib/milvus
+    depends_on:
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 15s
+      start_period: 90s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+
+  attu:
+    image: zilliz/attu:v2.5.10
+    container_name: shopkeeper-brain-02-attu
+    ports:
+      - "127.0.0.1:${ATTU_PORT:-3001}:3000"
+    environment:
+      MILVUS_URL: milvus:19530
+    depends_on:
+      milvus:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:8.0.32-noble
+    container_name: shopkeeper-brain-02-mongodb
+    ports:
+      - "127.0.0.1:${MONGODB_PORT:-27017}:27017"
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  etcd-data:
+  minio-data:
+  milvus-data:
+  mongodb-data:
+
+# Compose：提供数据库和存储基础设施
+# BGE 模型：负责生成向量
+# Milvus：负责向量检索
+# MongoDB：负责聊天历史
+# MinIO：负责文件和图片
+# etcd：负责支撑 Milvus
+# Attu：负责查看和管理 Milvus
