@@ -128,7 +128,7 @@ class PdfToMdNode(BaseNode):
         # 返回状态码
         return processed_code
 
-    def _get_md_paths(self, import_file_path, file_dir_path):
+    def _get_md_paths(self, import_file_path: Path, file_dir_path: Path) -> str:
         """
         获取PDF解析成MD后的MD文件的实际路径
         :param import_file_path: 被解析的PDF文件路径，全路径(路径+文件名)
@@ -137,8 +137,16 @@ class PdfToMdNode(BaseNode):
         """
         # pdf文件的名称，不含扩展名和路径
         file_name = import_file_path.stem
-        # /Users/mazhiwei/Downloads/项目-智库/shopkeeper_brain_02_终结版/shopkeeper_brain/knowledge/processor/import_process/temp_dir\hak180产品安全手册\auto\hak180产品安全手册.md
+        # /Users/mazhiwei/Downloads/项目-智库/shopkeeper_brain_02_终结版/shopkeeper_brain/knowledge/processor/import_process/temp_dir/hak180产品安全手册/auto/hak180产品安全手册.md
         md_path = file_dir_path / file_name / "auto" / f"{file_name}.md"
+
+        # MinerU命令返回成功后，还需要确认目标Markdown文件确实已经生成。
+        if not md_path.is_file():
+            raise FileProcessingError(
+                f"MinerU转换完成，但没有找到Markdown文件：{md_path}",
+                self.name
+            )
+
         return str(md_path)
 
 
