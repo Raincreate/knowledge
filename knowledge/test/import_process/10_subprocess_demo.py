@@ -21,7 +21,7 @@ result = subprocess.run(
     [
         "mineru",
         "-p",
-        r"/Users/mazhiwei/Downloads/项目-智库/shopkeeper_brain_02_终结版/shopkeeper_brain/knowledge/processor/import_process/temp_dir\hak180产品安全手册.pdf",
+        r"/Users/mazhiwei/Downloads/项目-智库/shopkeeper_brain_02_终结版/shopkeeper_brain/knowledge/processor/import_process/temp_dir/hak180产品安全手册.pdf",
         "-o",
         r"/Users/mazhiwei/Downloads/项目-智库/shopkeeper_brain_02_终结版/shopkeeper_brain/knowledge/processor/import_process/temp_dir2",
         "--backend",

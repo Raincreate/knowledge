@@ -67,7 +67,7 @@ class BaseNode(ABC):
         task_id = state.get("task_id", "")
         try:
             # 1. 开始准备执行节点
-            self.logger.info(f"--- {self.name} 开始 ---")
+            self.logger.info(f"--- {self.name} 开始123 ---")
             if task_id:
                 add_running_task(task_id, self.name)
 

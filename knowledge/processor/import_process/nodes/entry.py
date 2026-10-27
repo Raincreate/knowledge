@@ -69,7 +69,8 @@ if __name__ == '__main__':
     }
 
     entry = EntryNode()
-    process_state = entry.process(state)
+    # process_state = entry.process(state)
+    process_state = entry(state)
     print(json.dumps(process_state, indent=4, ensure_ascii=False))
 
 
