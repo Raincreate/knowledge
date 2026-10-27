@@ -1,5 +1,4 @@
 # ========== 通用 Python ==========
-.env
 .venv
 venv/
 env/
